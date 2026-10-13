@@ -20,11 +20,11 @@ import functools
 import json
 import sys
 import time
-
+import threading
 from dados_rh import SAIDAS
 
 ARQUIVO_METRICAS = SAIDAS / "metricas.jsonl"
-
+_TRAVA = threading.Lock()  # os 3 ramos paralelos gravam no mesmo arquivo: um de cada vez
 # ETAPA 10.2 -- devolva uma função que:
 #   1. mede o tempo de no(estado) com time.perf_counter();
 #   2. grava em ARQUIVO_METRICAS uma linha JSON com: thread_id (estado.get("thread_id")), no, segundos,
@@ -43,8 +43,9 @@ def medido(nome: str, no):
         for chave in ("tokens", "fonte_feriados"):
             if chave in saida:
                 linha[chave] = saida[chave]
-        with open(ARQUIVO_METRICAS, "a", encoding="utf-8") as arquivo:
-            arquivo.write(json.dumps(linha, ensure_ascii=False) + "\n")
+        with _TRAVA:
+            with open(ARQUIVO_METRICAS, "a", encoding="utf-8") as arquivo:
+                arquivo.write(json.dumps(linha, ensure_ascii=False) + "\n")
         return saida
  
     return embrulhado
